@@ -36,7 +36,7 @@ def call(body) {
 		      driver = "docker"
 
 		      config {
-		        image = "${env.DOCKER_REGISTRY}/cobalt/oracle:12"
+		        image = "${env.DOCKER_REGISTRY}/mine/oracle:12"
 
 		        port_map = {
 		          db_port = 1521
@@ -63,18 +63,18 @@ def call(body) {
 
 		"""
 	}
-	def nomadStatus = sh script: "export NOMAD_ADDR=http://db-cluster.mo.sap.corp:4646; nomad run ${dbHcl}", returnStatus: true
+	def nomadStatus = sh script: "export NOMAD_ADDR=http://db-cluster.ran.corp:4646; nomad run ${dbHcl}", returnStatus: true
 
 	//Shell returns zero for success
 	if(!nomadStatus) {
-		String dbCluster = "http://db-cluster.mo.sap.corp:4646/v1"
-		def allocations = com.sap.ms.Curl.GetJsonData("${dbCluster}/allocations")
+		String dbCluster = "http://db-cluster.ran.corp:4646/v1"
+		def allocations = com.ran.ms.Curl.GetJsonData("${dbCluster}/allocations")
 		log.info("Checking allocations")
 		for(def ic = 0; ic < allocations.size(); ic++) {
 			def allocation = allocations[ic]
 			if(allocation.JobID.equals(jobName)) {
 				log.info("Located the db allocation. Fetching the connection parameters")
-				def allocationDetails = com.sap.ms.Curl.GetJsonData("${dbCluster}/allocation/${allocation.ID}")
+				def allocationDetails = com.ran.ms.Curl.GetJsonData("${dbCluster}/allocation/${allocation.ID}")
 				String DB_PORT = allocationDetails.Resources.Networks[0].DynamicPorts[0].Value
 				String DB_IP = allocationDetails.Resources.Networks[0].IP
 				String SID = "XE"
@@ -86,7 +86,7 @@ def call(body) {
 				allocationDetails = null
 				allocations = null
 				config.step(DB_IP, DB_PORT, SID)
-				sh script: "export NOMAD_ADDR=http://db-cluster.mo.sap.corp:4646; nomad stop ${jobName}"
+				sh script: "export NOMAD_ADDR=http://db-cluster.ran.corp:4646; nomad stop ${jobName}"
 				return
 			}
 		}
